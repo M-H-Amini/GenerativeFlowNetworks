@@ -1,5 +1,5 @@
 class MHGrid:
-    def __init__(self, n_rows=4, n_cols=4):
+    def __init__(self, n_rows=4, n_cols=4, goals=None):
         """
         Initialize the grid environment with the given number of rows and columns.
         """
@@ -25,7 +25,10 @@ class MHGrid:
         self.history = [self.current_state]
 
         # Set the goal position at the bottom-right corner of the grid
-        self.goal = (n_rows - 1, n_cols - 1)
+        self.goals = goals
+        if self.goals is None:
+            self.goals = [(n_rows - 1, n_cols - 1)]
+        
 
     def step(self, action):
         """
@@ -65,7 +68,7 @@ class MHGrid:
         self.history.append(self.current_state)
 
         # Check if the goal has been reached
-        if self.current_state == self.goal:
+        if self.current_state in self.goals:
             reward = 1  # Positive reward for reaching the goal
             done = True
         else:
@@ -105,8 +108,9 @@ class MHGrid:
             grid[row, col] = 0.5  # Agent position
 
             # Mark the goal position
-            goal_row, goal_col = self.goal
-            grid[goal_row, goal_col] = 1.0  # Goal position
+            for goal in self.goals:
+                goal_row, goal_col = goal
+                grid[goal_row, goal_col] = 1.0  # Goal position
 
             # Plot the grid with (0,0) at the upper-left corner
             plt.imshow(grid, cmap='gray_r', interpolation='nearest')
@@ -120,8 +124,9 @@ class MHGrid:
             grid = [[' ' for _ in range(self.n_cols)] for _ in range(self.n_rows)]
 
             # Mark the goal position
-            goal_row, goal_col = self.goal
-            grid[goal_row][goal_col] = 'G'
+            for goal in self.goals:
+                goal_row, goal_col = goal
+                grid[goal_row][goal_col] = 'G'
 
             # Mark the current position
             row, col = self.current_state
@@ -148,12 +153,28 @@ class MHGrid:
         Return the history of states visited by the agent.
         """
         return self.history
+    
+    def legal_actions(self, s=None):
+        if s is None:
+            s = self.current_state
+        row, col = s
+        actions = []
+        if row > 0:
+            actions.append(0)
+        if row < self.n_rows - 1:
+            actions.append(2)
+        if col > 0:
+            actions.append(3)
+        if col < self.n_cols - 1:
+            actions.append(1)
+        actions = list(sorted(actions))
+        return actions
 
     def __repr__(self):
         """
         Return a string representation of the environment.
         """
-        return f'MHGrid(n_rows={self.n_rows}, n_cols={self.n_cols}, current_state={self.current_state}, goal={self.goal})'
+        return f'MHGrid(n_rows={self.n_rows}, n_cols={self.n_cols}, current_state={self.current_state}, goals={self.goals})'
 
     def animate(self, mode='human', interval=500):
         """
@@ -172,8 +193,9 @@ class MHGrid:
             # Set up the figure and axis
             fig, ax = plt.subplots()
             grid = np.zeros((self.n_rows, self.n_cols))
-            goal_row, goal_col = self.goal
-            grid[goal_row, goal_col] = 1.0  # Goal position
+            for goal in self.goals:
+                goal_row, goal_col = goal
+                grid[goal_row, goal_col] = 1.0  # Goal position
 
             # Display the initial grid
             im = ax.imshow(grid, cmap='gray_r', interpolation='nearest')
@@ -189,7 +211,9 @@ class MHGrid:
                 row, col = self.history[frame]
                 grid[row, col] = 0.5  # Agent position
                 # Mark the goal position
-                grid[goal_row, goal_col] = 1.0
+                for goal in self.goals:
+                    goal_row, goal_col = goal
+                    grid[goal_row, goal_col] = 1.0
                 # Update the image data
                 im.set_array(grid)
                 return [im]
@@ -214,8 +238,9 @@ class MHGrid:
                 grid = [[' ' for _ in range(self.n_cols)] for _ in range(self.n_rows)]
 
                 # Mark the goal position
-                goal_row, goal_col = self.goal
-                grid[goal_row][goal_col] = 'G'
+                for goal in self.goals:
+                    goal_row, goal_col = goal
+                    grid[goal_row][goal_col] = 'G'
 
                 # Mark the current position
                 row, col = state
@@ -234,7 +259,8 @@ class MHGrid:
             raise ValueError("Invalid mode for animate.")
 
 if __name__ == '__main__':
-    env = MHGrid()
+    goals = (3, 3), (1, 3), (2, 1)
+    env = MHGrid(n_rows=4, n_cols=4, goals=goals)
     print(env)
     print('Current state:', env.get_state())
     env.render(mode='ansi')
